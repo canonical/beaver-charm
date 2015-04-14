@@ -120,6 +120,7 @@ def write_beaver_config(logs_relation_data):
     if not config.has_section('beaver'):
         config.add_section('beaver')
     config.set('beaver', 'logstash_version', 1)
+    config.set('beaver', 'format', 'json')
     with open(BEAVER_CONFIG, "wb") as config_file:
         config.write(config_file)
 
