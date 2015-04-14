@@ -58,6 +58,6 @@ $(TESTS):
 test: unittest $(TESTS)
 
 unittest:
-	nosetests -v --with-coverage --cover-package hooks hooks
+	nosetests -v --nocapture --with-coverage --cover-package hooks hooks
 
 amulettests: $(TESTS)

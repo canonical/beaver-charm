@@ -22,11 +22,11 @@ config = hookenv.config()
 config.implicit_save = False
 
 APT_SOURCES_LIST = '/etc/apt/sources.list.d/beaver.list'
-SERVICE = 'python-beaver'
+SERVICE = 'beaver'
 KEYURL = 'http://keyserver.ubuntu.com:11371/pks/lookup?' \
          'op=get&search=0xA65E2E5D742A38EE'
 SOURCE = 'deb http://ppa.launchpad.net/evarlast/experimental/ubuntu trusty main'
-DEPENDENCIES = ('python-beaver', )
+DEPENDENCIES = ('beaver', )
 BEAVER_CONFIG = '/etc/beaver/conf'
 
 
@@ -93,45 +93,34 @@ def upgrade_charm():
 
 
 @hooks.hook('logs-relation-joined')
-def logs_relation_joined():
-    log('Logs joined')
-    types, files = logs_relation()
-    if types is not None and files is not None:
-       write_beaver_config(types, files)
-       restart()
-
-
 @hooks.hook('logs-relation-changed')
 def logs_relation_changed():
     log('Logs changed')
-    # Do something to tell logstash that we have new logs
-    types, files = logs_relation()
-    if types is not None and files is not None:
-      write_beaver_config(types, files)
-      restart()
+    logs_relation_data = logs_relation()
+    if logs_relation_data is not None:
+        write_beaver_config(logs_relation_data)
+        restart()
 
 
-def write_beaver_config(types, files):
+def write_beaver_config(logs_relation_data):
     config = ConfigParser.ConfigParser()
-    for file in files:
-        config[file]['type'] = 'syslog'
-        config[file]['tags'] = 'sys'
+    for file, type in logs_relation_data:
+        config.add_section(file)
+        config.set(file, 'type', type)
     host.write_file(BEAVER_CONFIG, config)
 
 
 def logs_relation():
     lsr = LogsRelation()
     log("LogsRelation: {}".format(lsr))
-    if 'logs' not in lsr:
-        return None, None
     r = lsr['logs']
     if not r or 'types' not in r[0]:
-        return None, None
+        return None
     if not r or 'files' not in r[0]:
-        return types, None
+        return None
     types = r[0]['types'].split()
     files = r[0]['files'].split()
-    return types, files
+    return zip(types, files)
 
 
 def ensure_ppa():
@@ -174,7 +163,6 @@ def apt_get_update():
     except Exception as e:
         msg = "apt_get_update error:{}".format(e)
         log(msg)
-        print(msg)
 
 
 class LogsRelation(RelationContext):
