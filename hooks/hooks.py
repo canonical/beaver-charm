@@ -22,11 +22,11 @@ config = hookenv.config()
 config.implicit_save = False
 
 APT_SOURCES_LIST = '/etc/apt/sources.list.d/beaver.list'
-SERVICE = 'beaver'
+SERVICE = 'python-beaver'
 KEYURL = 'http://keyserver.ubuntu.com:11371/pks/lookup?' \
          'op=get&search=0xA65E2E5D742A38EE'
 SOURCE = 'deb http://ppa.launchpad.net/evarlast/experimental/ubuntu trusty main'
-DEPENDENCIES = ('beaver', )
+DEPENDENCIES = ('python-beaver', )
 BEAVER_CONFIG = '/etc/beaver/conf'
 
 
@@ -64,6 +64,7 @@ def config_changed():
 def install():
     log('Installing beaver')
     ensure_ppa()
+    apt_get_update()
     ensure_packages(*DEPENDENCIES)
 
 
@@ -95,8 +96,9 @@ def upgrade_charm():
 def logs_relation_joined():
     log('Logs joined')
     types, files = logs_relation()
-    write_beaver_config(types, files)
-    restart()
+    if types is not None and files is not None:
+       write_beaver_config(types, files)
+       restart()
 
 
 @hooks.hook('logs-relation-changed')
@@ -104,12 +106,13 @@ def logs_relation_changed():
     log('Logs changed')
     # Do something to tell logstash that we have new logs
     types, files = logs_relation()
-    write_beaver_config(types, files)
-    restart()
+    if types is not None and files is not None:
+      write_beaver_config(types, files)
+      restart()
 
 
 def write_beaver_config(types, files):
-    config = configparser.ConfigParser()
+    config = ConfigParser.ConfigParser()
     for file in files:
         config[file]['type'] = 'syslog'
         config[file]['tags'] = 'sys'
@@ -120,10 +123,10 @@ def logs_relation():
     lsr = LogsRelation()
     log("LogsRelation: {}".format(lsr))
     if 'logs' not in lsr:
-        return
+        return None, None
     r = lsr['logs']
     if not r or 'types' not in r[0]:
-        return
+        return None, None
     if not r or 'files' not in r[0]:
         return types, None
     types = r[0]['types'].split()

@@ -22,7 +22,7 @@ deploy:
 	# Setting up the Juju repository.
 	mkdir $(JUJU_REPOSITORY)/trusty
 	rsync -a . $(JUJU_REPOSITORY)/trusty/beaver --exclude .git --exclude tests
-	juju deploy cs:~evarlast/trusty/apache2
+	juju deploy cs:~evarlast/trusty/apache2 || true
 	juju deploy local:trusty/beaver
 	juju add-relation apache2 beaver
 
