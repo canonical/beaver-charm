@@ -4,6 +4,10 @@ import os
 import unittest
 
 import mock
+from mock import (
+    patch,
+    Mock
+)
 
 os.environ['CHARM_DIR'] = os.path.join(os.path.dirname(__file__), '..')
 os.environ['JUJU_UNIT_NAME'] = 'beaver/0'
@@ -72,14 +76,12 @@ class TestLogsRelation(unittest.TestCase):
              'types': '\n'.join(['c', 'd'])}
         ]
         self.mhookenv.reset_mock()
-        host.write_file.reset_mock()
 
     def tearDown(self):
         self.phookenv.stop()
 
-    def test_changed_does_not_raise(self):
-        hooks.logs_relation_changed()
-
     def test_changed(self):
-        hooks.logs_relation_changed()
-        self.assertTrue(host.write_file.is_called)
+        mock_file_handle = Mock()
+        with patch('__builtin__.open') as mock_file_handle:
+            hooks.logs_relation_changed()
+        self.assertTrue(mock_file_handle.write.is_called)

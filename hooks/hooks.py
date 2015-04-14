@@ -107,7 +107,8 @@ def write_beaver_config(logs_relation_data):
     for file, type in logs_relation_data:
         config.add_section(file)
         config.set(file, 'type', type)
-    host.write_file(BEAVER_CONFIG, config)
+    with open(BEAVER_CONFIG, "wb") as config_file:
+        config.write(config_file)
 
 
 def logs_relation():
