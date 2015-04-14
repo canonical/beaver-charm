@@ -113,7 +113,7 @@ def input_tcp_relation_changed():
 
 def write_beaver_config(logs_relation_data):
     config = get_config()
-    for file, type in logs_relation_data:
+    for type, file in logs_relation_data:
         if not config.has_section(file):
             config.add_section(file)
         config.set(file, 'type', type)
