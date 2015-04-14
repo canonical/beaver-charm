@@ -102,15 +102,44 @@ def logs_relation_changed():
         restart()
 
 
+@hooks.hook('input-tcp-relation-joined')
+@hooks.hook('input-tcp-relation-changed')
+def input_tcp_relation_changed():
+    log('Input tcp changed')
+    private_ip, port = input_tcp_relation()
+    write_beaver_config_forlogstash(private_ip, port)
+    restart()
+
+
 def write_beaver_config(logs_relation_data):
-    config = ConfigParser.ConfigParser()
+    config = get_config()
     for file, type in logs_relation_data:
-        config.add_section(file)
+        if not config.has_section(file):
+            config.add_section(file)
         config.set(file, 'type', type)
-    config.add_section('beaver')
+    if not config.has_section('beaver'):
+        config.add_section('beaver')
     config.set('beaver', 'logstash_version', 1)
     with open(BEAVER_CONFIG, "wb") as config_file:
         config.write(config_file)
+
+
+def write_beaver_config_forlogstash(private_ip, port):
+    config = ConfigParser.ConfigParser()
+    if not config.has_section('beaver'):
+        config.add_section('beaver')
+    config.set('beaver', 'tcp_host', private_ip)
+    config.set('beaver', 'tcp_port', port)
+    with open(BEAVER_CONFIG, "wb") as config_file:
+        config.write(config_file)
+
+
+def get_config():
+    config = ConfigParser.ConfigParser()
+    if not os.path.isfile(BEAVER_CONFIG):
+        return config
+    config.read(BEAVER_CONFIG)
+    return config
 
 
 def logs_relation():
@@ -124,6 +153,19 @@ def logs_relation():
     types = r[0]['types'].split()
     files = r[0]['files'].split()
     return zip(types, files)
+
+
+def input_tcp_relation():
+    itr = InputTcpRelation()
+    log("InputTcpRelation: {}".format(itr))
+    r = itr['input-tcp']
+    if not r or 'port' not in r[0]:
+        return None
+    if not r or 'private-address' not in r[0]:
+        return None
+    port = r[0]['port']
+    private_address = r[0]['private-address']
+    return private_address, port
 
 
 def ensure_ppa():
@@ -172,6 +214,12 @@ class LogsRelation(RelationContext):
     name = 'logs'
     interface = 'logs'
     required_keys = ['types', 'files']
+
+
+class InputTcpRelation(RelationContext):
+    name = 'input-tcp'
+    interface = 'logstash-tcp'
+    required_keys = ['port', 'private-address']
 
 
 if __name__ == "__main__":

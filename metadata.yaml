@@ -12,3 +12,5 @@ requires:
   logs:
     interface: logs
     scope: container
+  input-tcp:
+    interface: logstash-tcp

@@ -80,8 +80,31 @@ class TestLogsRelation(unittest.TestCase):
     def tearDown(self):
         self.phookenv.stop()
 
-    def test_changed(self):
+    def test_logs_changed(self):
         mock_file_handle = Mock()
         with patch('__builtin__.open') as mock_file_handle:
             hooks.logs_relation_changed()
+        self.assertTrue(mock_file_handle.write.is_called)
+
+
+class TestInputTcpRelation(unittest.TestCase):
+
+    def setUp(self):
+        self.phookenv = mock.patch.object(services.helpers, 'hookenv')
+        self.mhookenv = self.phookenv.start()
+        self.mhookenv.relation_ids.return_value = ['baz']
+        self.mhookenv.related_units.side_effect = lambda i: [i + '/0']
+        self.mhookenv.relation_get.side_effect = [
+            {'port': '9999',
+             'private-address': '10.8.0.87'}
+        ]
+        self.mhookenv.reset_mock()
+
+    def tearDown(self):
+        self.phookenv.stop()
+
+    def test_inputtcp_changed(self):
+        mock_file_handle = Mock()
+        with patch('__builtin__.open') as mock_file_handle:
+            hooks.input_tcp_relation_changed()
         self.assertTrue(mock_file_handle.write.is_called)
