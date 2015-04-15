@@ -86,6 +86,12 @@ class TestLogsRelation(unittest.TestCase):
             hooks.logs_relation_changed()
         self.assertTrue(mock_file_handle.write.is_called)
 
+    def test_logs_departed(self):
+        mock_file_handle = Mock()
+        with patch('__builtin__.open') as mock_file_handle:
+            hooks.logs_relation_departed()
+        self.assertTrue(mock_file_handle.write.is_called)
+
 
 class TestInputTcpRelation(unittest.TestCase):
 
@@ -107,4 +113,10 @@ class TestInputTcpRelation(unittest.TestCase):
         mock_file_handle = Mock()
         with patch('__builtin__.open') as mock_file_handle:
             hooks.input_tcp_relation_changed()
+        self.assertTrue(mock_file_handle.write.is_called)
+
+    def test_inputtcp_departed(self):
+        mock_file_handle = Mock()
+        with patch('__builtin__.open') as mock_file_handle:
+            hooks.input_tcp_relation_departed()
         self.assertTrue(mock_file_handle.write.is_called)

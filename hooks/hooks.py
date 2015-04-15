@@ -102,12 +102,31 @@ def logs_relation_changed():
         restart()
 
 
+@hooks.hook('logs-relation-departed')
+@hooks.hook('logs-relation-broken')
+def logs_relation_departed():
+    log('Logs departed')
+    logs_relation_data = logs_relation()
+    if logs_relation_data is not None:
+        clean_beaver_config(logs_relation_data)
+        restart()
+
+
 @hooks.hook('input-tcp-relation-joined')
 @hooks.hook('input-tcp-relation-changed')
 def input_tcp_relation_changed():
     log('Input tcp changed')
     private_ip, port = input_tcp_relation()
     write_beaver_config_forlogstash(private_ip, port)
+    restart()
+
+
+@hooks.hook('input-tcp-relation-departed')
+@hooks.hook('input-tcp-relation-broken')
+def input_tcp_relation_departed():
+    log('Input tcp changed')
+    private_ip, port = input_tcp_relation()
+    clean_beaver_config_forlogstash(private_ip, port)
     restart()
 
 
@@ -125,12 +144,35 @@ def write_beaver_config(logs_relation_data):
         config.write(config_file)
 
 
+def clean_beaver_config(logs_relation_data):
+    config = get_config()
+    for type, file in logs_relation_data:
+        if config.has_option(file, 'type'):
+            config.remove_option(file, 'type')
+        if config.has_section(file):
+            config.remove_section(file)
+    with open(BEAVER_CONFIG, "wb") as config_file:
+        config.write(config_file)
+
+
 def write_beaver_config_forlogstash(private_ip, port):
     config = ConfigParser.ConfigParser()
     if not config.has_section('beaver'):
         config.add_section('beaver')
     config.set('beaver', 'tcp_host', private_ip)
     config.set('beaver', 'tcp_port', port)
+    with open(BEAVER_CONFIG, "wb") as config_file:
+        config.write(config_file)
+
+
+def clean_beaver_config_forlogstash(private_ip, port):
+    config = ConfigParser.ConfigParser()
+    if config.has_option('beaver', 'tcp_host'):
+        config.set('beaver', 'tcp_host', private_ip)
+    if config.has_option('beaver', 'tcp_port'):
+        config.set('beaver', 'tcp_port', port)
+    if config.has_section('beaver'):
+        config.remove_section('beaver')
     with open(BEAVER_CONFIG, "wb") as config_file:
         config.write(config_file)
 
