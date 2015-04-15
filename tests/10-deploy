@@ -2,7 +2,7 @@
 
 import amulet
 
-d = amulet.Deployment()
+d = amulet.Deployment(series='trusty')
 
 d.add('beaver')
 d.expose('beaver')

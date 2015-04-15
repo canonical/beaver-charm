@@ -169,7 +169,7 @@ def write_beaver_config(logs_relation_data):
         config.set(file, 'type', type)
     if not config.has_section('beaver'):
         config.add_section('beaver')
-    config.set('beaver', 'logstash_version', 1)
+    config.set('beaver', 'logstash_version', '1')
     config.set('beaver', 'format', 'json')
     with open(BEAVER_CONFIG, "wb") as config_file:
         config.write(config_file)
@@ -197,7 +197,7 @@ def write_beaver_config_forlogstash(private_ip, port):
 
 
 def clean_beaver_config_forlogstash(private_ip, port):
-    config = ConfigParser.ConfigParser()
+    config = ConfigParser.SafeConfigParser()
     if config.has_option('beaver', 'tcp_host'):
         config.set('beaver', 'tcp_host', private_ip)
     if config.has_option('beaver', 'tcp_port'):
@@ -209,7 +209,7 @@ def clean_beaver_config_forlogstash(private_ip, port):
 
 
 def get_config():
-    config = ConfigParser.ConfigParser()
+    config = ConfigParser.SafeConfigParser()
     if not os.path.isfile(BEAVER_CONFIG):
         return config
     config.read(BEAVER_CONFIG)
