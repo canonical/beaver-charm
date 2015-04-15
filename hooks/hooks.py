@@ -93,9 +93,8 @@ def upgrade_charm():
 
 
 @hooks.hook('logs-relation-joined')
-@hooks.hook('logs-relation-changed')
-def logs_relation_changed():
-    log('Logs changed')
+def logs_relation_joined():
+    log('Logs relation joined')
     logs_relation_data = logs_relation()
     if logs_relation_data is not None:
         config['logs_relation_data'] = logs_relation_data
@@ -104,21 +103,42 @@ def logs_relation_changed():
         restart()
 
 
+@hooks.hook('logs-relation-changed')
+def logs_relation_changed():
+    log('Logs relation changed')
+    logs_relation_data = logs_relation()
+    if 'logs_relation_data' in config.keys():
+        previous_data = config['logs_relation_data']
+    else:
+        previous_data = None
+    if logs_relation_data is not None:
+        config['logs_relation_data'] = logs_relation_data
+        config.save()
+        if previous_data is not None:
+            clean_beaver_config(previous_data)
+        write_beaver_config(logs_relation_data)
+        restart()
+
+
 @hooks.hook('logs-relation-departed')
 @hooks.hook('logs-relation-broken')
 def logs_relation_departed():
-    log('Logs departed')
-    logs_relation_data = config.get('logs_relation_data', None)
-    if logs_relation_data is not None:
-        clean_beaver_config(logs_relation_data)
+    log('Logs relation departed')
+    if 'logs_relation_data' in config.keys():
+        previous_data = config['logs_relation_data']
+    else:
+        previous_data = None
+    if previous_data is not None:
+        clean_beaver_config(previous_data)
         restart()
         del config['logs_relation_data']
+        config.save()
 
 
 @hooks.hook('input-tcp-relation-joined')
 @hooks.hook('input-tcp-relation-changed')
 def input_tcp_relation_changed():
-    log('Input tcp changed')
+    log('Input tcp relation joined or changed')
     private_ip, port = input_tcp_relation()
     if private_ip is not None and port is not None:
         config['input_tcp_relation_data'] = (private_ip, port)
@@ -130,7 +150,7 @@ def input_tcp_relation_changed():
 @hooks.hook('input-tcp-relation-departed')
 @hooks.hook('input-tcp-relation-broken')
 def input_tcp_relation_departed():
-    log('Input tcp changed')
+    log('Input tcp relation departed or broken')
     private_ip, port = input_tcp_relation()
     input_tcp_relation_data = config.get('input_tcp_relation_data', None)
     if input_tcp_relation_data is not None:
@@ -138,6 +158,7 @@ def input_tcp_relation_departed():
                                         input_tcp_relation_data[1])
         restart()
         del config['input_tcp_relation_data']
+        config.save()
 
 
 def write_beaver_config(logs_relation_data):
@@ -176,7 +197,7 @@ def write_beaver_config_forlogstash(private_ip, port):
 
 
 def clean_beaver_config_forlogstash(private_ip, port):
-    config = get_config()
+    config = ConfigParser.ConfigParser()
     if config.has_option('beaver', 'tcp_host'):
         config.set('beaver', 'tcp_host', private_ip)
     if config.has_option('beaver', 'tcp_port'):
@@ -213,9 +234,9 @@ def input_tcp_relation():
     log("InputTcpRelation: {}".format(itr))
     r = itr['input-tcp']
     if not r or 'port' not in r[0]:
-        return None
+        return None, None
     if not r or 'private-address' not in r[0]:
-        return None
+        return None, None
     port = r[0]['port']
     private_address = r[0]['private-address']
     return private_address, port
