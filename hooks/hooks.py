@@ -98,6 +98,8 @@ def logs_relation_changed():
     log('Logs changed')
     logs_relation_data = logs_relation()
     if logs_relation_data is not None:
+        config['logs_relation_data'] = logs_relation_data
+        config.save()
         write_beaver_config(logs_relation_data)
         restart()
 
@@ -106,10 +108,11 @@ def logs_relation_changed():
 @hooks.hook('logs-relation-broken')
 def logs_relation_departed():
     log('Logs departed')
-    logs_relation_data = logs_relation()
+    logs_relation_data = config.get('logs_relation_data', None)
     if logs_relation_data is not None:
         clean_beaver_config(logs_relation_data)
         restart()
+        del config['logs_relation_data']
 
 
 @hooks.hook('input-tcp-relation-joined')
@@ -117,8 +120,11 @@ def logs_relation_departed():
 def input_tcp_relation_changed():
     log('Input tcp changed')
     private_ip, port = input_tcp_relation()
-    write_beaver_config_forlogstash(private_ip, port)
-    restart()
+    if private_ip is not None and port is not None:
+        config['input_tcp_relation_data'] = (private_ip, port)
+        config.save()
+        write_beaver_config_forlogstash(private_ip, port)
+        restart()
 
 
 @hooks.hook('input-tcp-relation-departed')
@@ -126,8 +132,12 @@ def input_tcp_relation_changed():
 def input_tcp_relation_departed():
     log('Input tcp changed')
     private_ip, port = input_tcp_relation()
-    clean_beaver_config_forlogstash(private_ip, port)
-    restart()
+    input_tcp_relation_data = config.get('input_tcp_relation_data', None)
+    if input_tcp_relation_data is not None:
+        clean_beaver_config_forlogstash(input_tcp_relation_data[0],
+                                        input_tcp_relation_data[1])
+        restart()
+        del config['input_tcp_relation_data']
 
 
 def write_beaver_config(logs_relation_data):
@@ -156,7 +166,7 @@ def clean_beaver_config(logs_relation_data):
 
 
 def write_beaver_config_forlogstash(private_ip, port):
-    config = ConfigParser.ConfigParser()
+    config = get_config()
     if not config.has_section('beaver'):
         config.add_section('beaver')
     config.set('beaver', 'tcp_host', private_ip)
@@ -166,7 +176,7 @@ def write_beaver_config_forlogstash(private_ip, port):
 
 
 def clean_beaver_config_forlogstash(private_ip, port):
-    config = ConfigParser.ConfigParser()
+    config = get_config()
     if config.has_option('beaver', 'tcp_host'):
         config.set('beaver', 'tcp_host', private_ip)
     if config.has_option('beaver', 'tcp_port'):

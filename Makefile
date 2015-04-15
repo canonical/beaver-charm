@@ -22,9 +22,12 @@ deploy:
 	# Setting up the Juju repository.
 	mkdir $(JUJU_REPOSITORY)/trusty
 	rsync -a . $(JUJU_REPOSITORY)/trusty/beaver --exclude .git --exclude tests
-	juju deploy cs:~evarlast/trusty/apache2 || true
+	juju deploy cs:~evarlast/trusty/apache2
 	juju deploy local:trusty/beaver
+	juju deploy cs:~evarlast/trusty/logstash
 	juju add-relation apache2 beaver
+	juju add-relation logstash beaver 
+	juju set apache2 vhost_http_template=$(shell base64 -w0<tests/apache2.template)
 
 clean:
 	-$(RM) -rf files

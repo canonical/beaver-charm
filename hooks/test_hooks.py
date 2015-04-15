@@ -72,8 +72,8 @@ class TestLogsRelation(unittest.TestCase):
         self.mhookenv.relation_ids.return_value = ['baz']
         self.mhookenv.related_units.side_effect = lambda i: [i + '/0']
         self.mhookenv.relation_get.side_effect = [
-            {'files': '\n'.join(['a', 'b']),
-             'types': '\n'.join(['c', 'd'])}
+            {'files': '\n'.join(['file1', 'file2']),
+             'types': '\n'.join(['type1', 'type2'])}
         ]
         self.mhookenv.reset_mock()
 
