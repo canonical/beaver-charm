@@ -1,26 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright 2014-2015 Canonical Limited.
-#
-# This file is part of charm-helpers.
-#
-# charm-helpers is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License version 3 as
-# published by the Free Software Foundation.
-#
-# charm-helpers is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with charm-helpers.  If not, see <http://www.gnu.org/licenses/>.
+__author__ = 'Jorge Niedbalski R. <jorge.niedbalski@canonical.com>'
 
 import io
 import os
-
-__author__ = 'Jorge Niedbalski R. <jorge.niedbalski@canonical.com>'
 
 
 class Fstab(io.FileIO):
@@ -77,7 +61,7 @@ class Fstab(io.FileIO):
         for line in self.readlines():
             line = line.decode('us-ascii')
             try:
-                if line.strip() and not line.strip().startswith("#"):
+                if line.strip() and not line.startswith("#"):
                     yield self._hydrate_entry(line)
             except ValueError:
                 pass
@@ -104,7 +88,7 @@ class Fstab(io.FileIO):
 
         found = False
         for index, line in enumerate(lines):
-            if line.strip() and not line.strip().startswith("#"):
+            if not line.startswith("#"):
                 if self._hydrate_entry(line) == entry:
                     found = True
                     break

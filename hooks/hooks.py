@@ -107,10 +107,13 @@ def logs_relation_joined():
 def logs_relation_changed():
     log('Logs relation changed')
     logs_relation_data = logs_relation()
-    if 'logs_relation_data' in config.keys():
-        previous_data = config['logs_relation_data']
-    else:
-        previous_data = None
+    # if 'logs_relation_data' in config.keys():
+    #     previous_data = config['logs_relation_data']
+    # else:
+    #     previous_data = None
+    for key in config:
+        log(config.get('key'))
+    previous_data = config.get('logs_relation_data', None)
     if logs_relation_data is not None:
         config['logs_relation_data'] = logs_relation_data
         config.save()

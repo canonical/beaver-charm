@@ -1,19 +1,3 @@
-# Copyright 2014-2015 Canonical Limited.
-#
-# This file is part of charm-helpers.
-#
-# charm-helpers is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License version 3 as
-# published by the Free Software Foundation.
-#
-# charm-helpers is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with charm-helpers.  If not, see <http://www.gnu.org/licenses/>.
-
 import os
 import yaml
 from charmhelpers.core import hookenv
@@ -45,14 +29,12 @@ class RelationContext(dict):
     """
     name = None
     interface = None
+    required_keys = []
 
     def __init__(self, name=None, additional_required_keys=None):
-        if not hasattr(self, 'required_keys'):
-            self.required_keys = []
-
         if name is not None:
             self.name = name
-        if additional_required_keys:
+        if additional_required_keys is not None:
             self.required_keys.extend(additional_required_keys)
         self.get_data()
 
@@ -136,10 +118,7 @@ class MysqlRelation(RelationContext):
     """
     name = 'db'
     interface = 'mysql'
-
-    def __init__(self, *args, **kwargs):
-        self.required_keys = ['host', 'user', 'password', 'database']
-        RelationContext.__init__(self, *args, **kwargs)
+    required_keys = ['host', 'user', 'password', 'database']
 
 
 class HttpRelation(RelationContext):
@@ -151,10 +130,7 @@ class HttpRelation(RelationContext):
     """
     name = 'website'
     interface = 'http'
-
-    def __init__(self, *args, **kwargs):
-        self.required_keys = ['host', 'port']
-        RelationContext.__init__(self, *args, **kwargs)
+    required_keys = ['host', 'port']
 
     def provide_data(self):
         return {

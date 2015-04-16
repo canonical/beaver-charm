@@ -1,2 +1,2 @@
 [CustomLog /var/log/apache2/{{ servername }}.log combined_with_request_time
-ErrorLog /var/log/apache2/{{ servername }}-error.log
+ErrorLog /var/log/apache2/{{ servername }}-errorttt.log

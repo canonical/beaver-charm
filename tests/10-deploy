@@ -17,10 +17,9 @@ except:
 
 unit = d.sentry.unit['beaver/0']
 
-# test we can access over http
-output, code = unit.run("ps -a | sed -n /beaver/p")
-if (code != 0):
-    amulet.raise_status(amulet.FAIL, msg="Failed to find beaver")
-    print(output)
-else:
-    print(output)
+# output, code = unit.run("ps -a | sed -n /beaver/p")
+# if (code != 0):
+#     amulet.raise_status(amulet.FAIL, msg="Failed to find beaver")
+#     print(output)
+# else:
+#     print(output)
