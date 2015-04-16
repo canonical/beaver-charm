@@ -134,8 +134,6 @@ def logs_relation_departed():
     if previous_data is not None:
         clean_beaver_config(previous_data)
         restart()
-        del config['logs_relation_data']
-        config.save()
 
 
 @hooks.hook('input-tcp-relation-joined')
@@ -160,8 +158,6 @@ def input_tcp_relation_departed():
         clean_beaver_config_forlogstash(input_tcp_relation_data[0],
                                         input_tcp_relation_data[1])
         restart()
-        del config['input_tcp_relation_data']
-        config.save()
 
 
 def write_beaver_config(logs_relation_data):
