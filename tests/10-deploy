@@ -1,11 +1,16 @@
-#!/usr/bin/python3
+#!/usr/bin/env python
 
 import amulet
+import base64
+
 
 d = amulet.Deployment(series='trusty')
 
 d.add('beaver')
-d.expose('beaver')
+d.add('apache2', charm='~evarlast/trusty/apache2')
+d.add('logstash', charm='~evarlast/trusty/logstash')
+d.relate('apache2:logs', 'beaver:logs')
+d.relate('logstash:input-tcp', 'beaver:input-tcp')
 
 try:
     d.setup(timeout=900)
@@ -15,11 +20,56 @@ except amulet.helpers.TimeoutError:
 except:
     raise
 
-unit = d.sentry.unit['beaver/0']
+unit = d.sentry.unit['apache2/0']
 
-# output, code = unit.run("ps -a | sed -n /beaver/p")
-# if (code != 0):
-#     amulet.raise_status(amulet.FAIL, msg="Failed to find beaver")
-#     print(output)
-# else:
-#     print(output)
+output, code = unit.run("sudo service beaver status")
+if code != 0:
+    amulet.raise_status(amulet.FAIL, msg="Failed to find beaver")
+if 'start/running' not in output:
+    amulet.raise_status(amulet.FAIL,
+                        msg="Failed to find beaver: {}".format(output))
+
+output, code = unit.run("sudo cat /etc/beaver/conf")
+if code != 0:
+    amulet.raise_status(amulet.FAIL, msg="Failed to find config for beaver")
+if 'logstash_version = 1' not in output:
+    amulet.raise_status(amulet.FAIL,
+                        msg="Error in config : {}".format(output))
+
+if '/var/log/apache2' not in output:
+    amulet.raise_status(amulet.FAIL,
+                        msg="Error in config no apache 2: {}".format(output))
+if 'type = apache_access' not in output:
+    amulet.raise_status(amulet.FAIL,
+                        msg="Error in config no apache 2: {}".format(output))
+
+with open("tests/apache2.template", "rb") as apache_file:
+    encoded_string = base64.b64encode(apache_file.read())
+
+d.configure('apache2', {
+    'vhost_http_template': encoded_string
+})
+
+try:
+    d.setup(timeout=1800)
+    d.sentry.wait()
+except amulet.helpers.TimeoutError:
+    amulet.raise_status(amulet.SKIP, msg="Environment wasn't stood up in time")
+except:
+    raise
+
+output, code = unit.run("sudo cat /etc/beaver/conf")
+if code != 0:
+    amulet.raise_status(amulet.FAIL,
+                        msg="Failed to find config for beaver after set")
+if '/var/log/apache2' not in output:
+    amulet.raise_status(amulet.FAIL,
+                        msg="Error in config no apache 2: {}".format(output))
+if 'type = apache_access' not in output:
+    amulet.raise_status(amulet.FAIL,
+                        msg="Error in config no apache 2: {}".format(output))
+if 'type = apache_error' not in output:
+    amulet.raise_status(amulet.FAIL,
+                        msg="Error in config no apache 2: {}".format(output))
+
+

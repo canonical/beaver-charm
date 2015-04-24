@@ -25,7 +25,8 @@ APT_SOURCES_LIST = '/etc/apt/sources.list.d/beaver.list'
 SERVICE = 'beaver'
 KEYURL = 'http://keyserver.ubuntu.com:11371/pks/lookup?' \
          'op=get&search=0xA65E2E5D742A38EE'
-SOURCE = 'deb http://ppa.launchpad.net/evarlast/experimental/ubuntu trusty main'
+SOURCE = 'deb http://ppa.launchpad.net/evarlast/experimental/ubuntu' \
+         ' trusty main'
 DEPENDENCIES = ('beaver', )
 BEAVER_CONFIG = '/etc/beaver/conf'
 
@@ -107,13 +108,10 @@ def logs_relation_joined():
 def logs_relation_changed():
     log('Logs relation changed')
     logs_relation_data = logs_relation()
-    # if 'logs_relation_data' in config.keys():
-    #     previous_data = config['logs_relation_data']
-    # else:
-    #     previous_data = None
-    for key in config:
-        log(config.get('key'))
-    previous_data = config.get('logs_relation_data', None)
+    if 'logs_relation_data' in config.keys():
+        previous_data = config['logs_relation_data']
+    else:
+        previous_data = None
     if logs_relation_data is not None:
         config['logs_relation_data'] = logs_relation_data
         config.save()
@@ -152,7 +150,6 @@ def input_tcp_relation_changed():
 @hooks.hook('input-tcp-relation-broken')
 def input_tcp_relation_departed():
     log('Input tcp relation departed or broken')
-    private_ip, port = input_tcp_relation()
     input_tcp_relation_data = config.get('input_tcp_relation_data', None)
     if input_tcp_relation_data is not None:
         clean_beaver_config_forlogstash(input_tcp_relation_data[0],
@@ -166,10 +163,6 @@ def write_beaver_config(logs_relation_data):
         if not config.has_section(file):
             config.add_section(file)
         config.set(file, 'type', type)
-    if not config.has_section('beaver'):
-        config.add_section('beaver')
-    config.set('beaver', 'logstash_version', '1')
-    config.set('beaver', 'format', 'json')
     with open(BEAVER_CONFIG, "wb") as config_file:
         config.write(config_file)
 
@@ -191,6 +184,10 @@ def write_beaver_config_forlogstash(private_ip, port):
         config.add_section('beaver')
     config.set('beaver', 'tcp_host', private_ip)
     config.set('beaver', 'tcp_port', port)
+    if not config.has_section('beaver'):
+        config.add_section('beaver')
+    config.set('beaver', 'logstash_version', '1')
+    config.set('beaver', 'format', 'json')
     with open(BEAVER_CONFIG, "wb") as config_file:
         config.write(config_file)
 

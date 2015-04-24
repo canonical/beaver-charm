@@ -2,13 +2,19 @@
 # Makefile for beaver charm.
 
 export JUJU_TEST_CHARM=beaver
-# Unset the Juju repository variable for Amulet.
 export JUJU_REPOSITORY=
 
 SYSDEPS = charm-tools juju-core juju-local \
     pep8 python-apt python-coverage python-mock python-nose \
     python-yaml rsync
 TESTS = $(shell find -L tests -type f -executable | sort)
+JUJU_ENV=local
+
+PYTHON = python
+VENV = .venv
+VENV_ACTIVATE = $(VENV)/bin/activate
+NOSE = $(VENV)/bin/nosetests
+PIP = $(VENV)/bin/pip
 
 # Keep phony targets in alphabetical order.
 .PHONY: $(TESTS) clean check deploy help sync sysdeps test unittest amulettests
@@ -26,11 +32,11 @@ deploy:
 	juju deploy local:trusty/beaver
 	juju deploy cs:~evarlast/trusty/logstash
 	juju add-relation apache2 beaver
-	juju add-relation logstash beaver 
+	juju add-relation logstash beaver
 	juju set apache2 vhost_http_template=$(shell base64 -w0<tests/apache2.template)
 
 clean:
-	-$(RM) -rf files
+	-$(RM) -rf ${VENV} .coverage
 
 check:
 	find hooks tests -name '*.py' | xargs pep8
@@ -46,8 +52,13 @@ help:
 	@echo 'make deploy - Deploy local charm from a temporary local repository.'
 	@echo '     The charm is deployed to the current default Juju environment.'
 	@echo '     The environment must be already bootstrapped.'
+	@echo 'make lint - Lint the python code.'
 	@echo 'make sync - Synchronize/update the charm helpers library.'
 	@echo 'make sysdeps - Install system deb dependencies.'
+
+.PHONY: lint
+lint:
+	find hooks tests -name *.py | xargs pep8
 
 sync: charm-helpers.yaml
 	scripts/charm_helpers_sync.py -d lib/charmhelpers -c charm-helpers.yaml
@@ -55,12 +66,32 @@ sync: charm-helpers.yaml
 sysdeps:
 	sudo apt-get install --yes $(SYSDEPS)
 
-$(TESTS):
-	$@
+$(VENV_ACTIVATE): test-requirements.pip
+	virtualenv --distribute -p $(PYTHON) $(VENV)
+	$(PIP) install -r test-requirements.pip || \
+		(touch test-requirements.pip; exit 1)
+	@touch $(VENV_ACTIVATE)
 
-test: unittest $(TESTS)
+.PHONY: testdeps
+testdeps: $(VENV_ACTIVATE)
+
+.PHONY: $(TESTS)
+$(TESTS): testdeps
+	. $(VENV_ACTIVATE); JUJU_ENV=$(JUJU_ENV) $@
+
+test: lint unittest amulettests
 
 unittest:
 	nosetests -v --nocapture --with-coverage --cover-package hooks hooks
 
-amulettests: $(TESTS)
+.PHONY: bootstrap_env
+bootstrap_env:
+	juju bootstrap -e $(JUJU_ENV)
+
+.PHONY: destroy_env
+destroy_env:
+	juju destroy-environment $(JUJU_ENV) -y
+
+.PHONY: amulettests
+amulettests: bootstrap_env $(TESTS) destroy_env
+
